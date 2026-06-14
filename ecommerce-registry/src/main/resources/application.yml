@@ -1,0 +1,17 @@
+server:
+  port: 8849
+
+spring:
+  application:
+    name: ecommerce-registry
+  config:
+    import: optional:nacos:ecommerce-registry.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+      config:
+        enabled: false
+
+# 注意：此服务作为Nacos客户端示例
+# Nacos Server需要在8848端口运行

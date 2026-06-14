@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #ff5000;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        button {
+            background: #ff5000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #e64a00;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 电商系统API测试工具</h1>
+        <p>使用此工具测试后端API是否正常工作</p>
+
+        <!-- 服务状态检查 -->
+        <div class="test-section">
+            <h2>📡 服务状态检查</h2>
+            <button onclick="checkServices()">检查所有服务</button>
+            <div id="service-status" class="result info">点击按钮检查服务状态...</div>
+        </div>
+
+        <!-- 用户注册测试 -->
+        <div class="test-section">
+            <h2>👤 用户注册测试</h2>
+            <p>通过Gateway访问User服务</p>
+            <input type="text" id="reg-username" placeholder="用户名" value="testuser001">
+            <input type="password" id="reg-password" placeholder="密码" value="123456">
+            <input type="text" id="reg-nickname" placeholder="昵称" value="测试用户001">
+            <input type="text" id="reg-phone" placeholder="手机号" value="13800138001">
+            <input type="text" id="reg-email" placeholder="邮箱" value="test001@example.com">
+            <br><br>
+            <button onclick="testRegister()">通过Gateway注册</button>
+            <button onclick="testRegisterDirect()">直接访问User服务</button>
+            <div id="register-result" class="result info">等待测试...</div>
+        </div>
+
+        <!-- 用户登录测试 -->
+        <div class="test-section">
+            <h2>🔑 用户登录测试</h2>
+            <input type="text" id="login-username" placeholder="用户名" value="testuser001">
+            <input type="password" id="login-password" placeholder="密码" value="123456">
+            <br><br>
+            <button onclick="testLogin()">测试登录</button>
+            <div id="login-result" class="result info">等待测试...</div>
+        </div>
+
+        <!-- 商品列表测试 -->
+        <div class="test-section">
+            <h2>🛍️ 商品列表测试</h2>
+            <button onclick="testProductList()">通过Gateway获取商品列表</button>
+            <button onclick="testProductListDirect()">直接访问Product服务</button>
+            <div id="product-result" class="result info">等待测试...</div>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const GATEWAY_URL = 'http://localhost:9000/api';
+        const USER_SERVICE_URL = 'http://localhost:8001';
+        const PRODUCT_SERVICE_URL = 'http://localhost:8002';
+
+        // 检查服务状态
+        async function checkServices() {
+            const resultDiv = document.getElementById('service-status');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在检查服务状态...';
+
+            const services = [
+                { name: 'Nacos', url: 'http://localhost:8848/nacos' },
+                { name: 'Gateway', url: 'http://localhost:9000' },
+                { name: 'User Service', url: 'http://localhost:8001' },
+                { name: 'Product Service', url: 'http://localhost:8002' },
+                { name: 'Frontend', url: 'http://localhost:3000' }
+            ];
+
+            let results = [];
+            for (let service of services) {
+                try {
+                    const response = await fetch(service.url, {
+                        method: 'GET',
+                        mode: 'no-cors'
+                    });
+                    results.push(`✅ ${service.name} (${service.url}): 运行中`);
+                } catch (error) {
+                    results.push(`❌ ${service.name} (${service.url}): 无法访问`);
+                }
+            }
+
+            resultDiv.textContent = results.join('\n');
+        }
+
+        // 通过Gateway注册用户
+        async function testRegister() {
+            const resultDiv = document.getElementById('register-result');
+            const data = {
+                username: document.getElementById('reg-username').value,
+                password: document.getElementById('reg-password').value,
+                nickname: document.getElementById('reg-nickname').value,
+                phone: document.getElementById('reg-phone').value,
+                email: document.getElementById('reg-email').value
+            };
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在通过Gateway注册用户...';
+
+            try {
+                const response = await fetch(`${GATEWAY_URL}/user/users/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `状态码: ${response.status}\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `错误: ${error.message}\n\n可能原因:\n1. Gateway无法访问User服务\n2. CORS跨域问题\n3. 网络连接问题`;
+            }
+        }
+
+        // 直接访问User服务注册
+        async function testRegisterDirect() {
+            const resultDiv = document.getElementById('register-result');
+            const data = {
+                username: document.getElementById('reg-username').value + '_direct',
+                password: document.getElementById('reg-password').value,
+                nickname: document.getElementById('reg-nickname').value + '_direct',
+                phone: document.getElementById('reg-phone').value,
+                email: document.getElementById('reg-email').value
+            };
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在直接访问User服务...';
+
+            try {
+                const response = await fetch(`${USER_SERVICE_URL}/users/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `状态码: ${response.status}\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 测试登录
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            const data = {
+                username: document.getElementById('login-username').value,
+                password: document.getElementById('login-password').value
+            };
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在登录...';
+
+            try {
+                const response = await fetch(`${GATEWAY_URL}/user/users/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `状态码: ${response.status}\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 通过Gateway获取商品列表
+        async function testProductList() {
+            const resultDiv = document.getElementById('product-result');
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在通过Gateway获取商品列表...';
+
+            try {
+                const response = await fetch(`${GATEWAY_URL}/product/products/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `状态码: ${response.status}\n商品数量: ${result.length || result.data?.length || 0}\n\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 直接访问Product服务
+        async function testProductListDirect() {
+            const resultDiv = document.getElementById('product-result');
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '正在直接访问Product服务...';
+
+            try {
+                const response = await fetch(`${PRODUCT_SERVICE_URL}/products/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `状态码: ${response.status}\n商品数量: ${result.length || result.data?.length || 0}\n\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 页面加载时自动检查服务状态
+        window.onload = function() {
+            checkServices();
+        };
+    </script>
+</body>
+</html>
